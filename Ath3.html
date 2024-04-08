@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Athletes Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            text-align: center;
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        input, button {
+            padding: 12px 20px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            width: calc(100% - 40px);
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        input:focus, button:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .info-text {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #333;
+            font-weight: 500;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>The Athletes Game</h1>
+        <button id="startGameBtn">Start Game</button>
+        <div id="gameSection" class="hidden">
+            <input type="text" id="athleteName" placeholder="Enter an athlete's name">
+            <button id="submitBtn">Submit</button>
+            <div id="result" class="info-text hidden">Start typing...</div>
+            <div id="score" class="info-text hidden">Score: 0</div>
+            <div id="timer" class="info-text hidden">30</div>
+            <button id="restartBtn" class="hidden">Restart Game</button>
+        </div>
+    </div>
+
+    <script>
+        let lastInitial = '';
+        let score = 0;
+        let gameTimer;
+
+        document.getElementById('startGameBtn').addEventListener('click', startGame);
+
+        function startGame() {
+            score = 0;
+            lastInitial = '';
+            document.getElementById('gameSection').classList.remove('hidden');
+            document.getElementById('startGameBtn').classList.add('hidden');
+            document.getElementById('score').classList.remove('hidden');
+            document.getElementById('timer').classList.remove('hidden');
+            document.getElementById('result').classList.remove('hidden');
+            document.getElementById('score').textContent = 'Score: 0';
+            document.getElementById('athleteName').value = '';
+            startGameTimer();
+        }
+
+        function submitName() {
+    // Get the athlete's name from the input field
+    const input = document.getElementById('athleteName');
+    const fullName = input.value.trim();
+    
+    // Check if the input is empty
+    if (fullName === '') {
+        alert('Please enter an athlete\'s full name.');
+        return;
+    }
+    
+    // Check if the name consists of at least two parts (first and last name)
+    const names = fullName.split(' ');
+    if (names.length < 2) {
+        alert('Please enter full name (first and last name).');
+        input.value = ''; // Clear the input field
+        return;
+    }
+
+    // Construct the URL for the AJAX request
+    const url = `http://localhost:3000/check-athlete?name=${encodeURIComponent(fullName)}`;
+    
+    // Make the AJAX request to the server
+    fetch(url)
+        .then(response => {
+            // Check if the response is ok (status in the range 200-299)
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json(); // Parse the JSON in the response
+        })
+        .then(data => {
+            // Check if the 'found' property in the response is true
+            if (data.found) {
+                alert('Athlete found!');
+                // Proceed with game logic if needed, such as updating score or displaying success message
+                
+                // Example: Reset the game timer to 30 seconds after a correct name submission
+                resetGameTimer();
+
+                // Example: Increase the score and display it
+                score++;
+                document.getElementById('score').textContent = 'Score: ' + score;
+                
+                // Prepare for the next entry
+                input.value = ''; // Clear the input field for the next name
+                // Optionally, update the UI to prompt for the next name based on game logic
+            } else {
+                // Athlete not found
+                alert('Athlete not found. Try again.');
+                input.value = ''; // Clear the input field
+            }
+        })
+        .catch(error => {
+            // Log or handle errors
+            console.error('Error:', error);
+            alert('There was an error checking the athlete name.');
+        });
+}
+		
+
+        function startGameTimer() {
+            let timeLeft = 30;
+            document.getElementById('timer').textContent = timeLeft;
+            clearInterval(gameTimer);
+            gameTimer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+		
+		
+
+        function endGame() {
+			clearInterval(gameTimer);
+			alert(`Time is up! Final score: ${score}`);
+			document.getElementById('restartBtn').classList.remove('hidden');
+			// Disable input and submit button
+			document.getElementById('athleteName').disabled = true;
+			document.getElementById('submitBtn').disabled = true;
+		}
+
+        function restartGame() {
+			// Re-enable input and submit button
+			document.getElementById('athleteName').disabled = false;
+			document.getElementById('submitBtn').disabled = false;
+
+			lastInitial = '';
+			score = 0;
+			document.getElementById('score').textContent = 'Score: 0';
+			document.getElementById('athleteName').value = '';
+			document.getElementById('result').textContent = 'Start typing...';
+			document.getElementById('restartBtn').classList.add('hidden');
+			startGameTimer();
+		}	
+		
+		function resetGameTimer() {
+			clearInterval(gameTimer); // Clear the existing timer
+			startGameTimer(); // Start a new timer
+		}
+
+        document.getElementById('submitBtn').addEventListener('click', submitName);
+        document.getElementById('restartBtn').addEventListener('click', restartGame);
+    </script>
+</body>
+</html>
